@@ -70,6 +70,6 @@ Contributions and feedback are highly encouraged! Please fork, contribute, and c
 
 ## 📫 Contact
 
-For collaboration or inquiries, please contact via [GitHub](https://github.com/) or email.
+For collaboration or inquiries, please contact via [GitHub]([https://github.com/](https://github.com/JasonZeng24)) or [email]([a1766776016@gmail.com]).
 
 Thank you for checking out the College Admission Predictor! 🎉🚀
