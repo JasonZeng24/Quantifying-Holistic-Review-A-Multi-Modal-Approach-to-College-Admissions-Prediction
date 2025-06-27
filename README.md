@@ -6,7 +6,7 @@ A powerful machine learning application designed to predict undergraduate admiss
 
 ## 🌟 Key Highlights
 
-* 🚀 **Essay Analysis:** GPT-driven scoring on content, language, and structure.
+* 🚀 **Essay Analysis:** Holistic scoring of college essays based on content, language, and structure, powered by GPT and MiniLM embeddings.
 * 📊 **Holistic Modeling:** Predictive modeling using GPA, SAT scores, extracurricular activities, and essay scores.
 * 🔍 **Transparent Predictions:** SHAP values and radar charts provide clear, interpretable insights.
 * 💻 **Interactive UI:** Streamlit-based platform for intuitive exploration.
