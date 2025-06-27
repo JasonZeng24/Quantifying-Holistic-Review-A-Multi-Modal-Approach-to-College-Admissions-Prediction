@@ -1,4 +1,5 @@
 # 🎓 College Admission Predictor
+![College Admission Predictor Logo](logo1.png)
 
 A powerful machine learning application designed to predict undergraduate admission probabilities to U.S. universities by leveraging structured data, natural language processing (NLP), and advanced predictive models.
 
