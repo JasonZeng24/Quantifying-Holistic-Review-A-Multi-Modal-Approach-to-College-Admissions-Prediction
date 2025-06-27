@@ -1,43 +1,65 @@
-Quantifying Holistic Review: A Multi-Modal Approach to College Admissions Prediction
+🎓 College Admission Predictor
 
-A machine learning-powered application designed to accurately predict undergraduate admission probabilities for U.S. universities using structured data analysis, natural language processing (NLP), and advanced predictive modeling techniques.
+A powerful machine learning application designed to predict undergraduate admission probabilities to U.S. universities by leveraging structured data, natural language processing (NLP), and advanced predictive models.
 
-🌟 Features
-	•	Essay Scoring: Evaluate application essays using GPT-based scoring systems across content, language, and structural quality.
-	•	Data-driven Predictions: Utilize structured inputs such as GPA, SAT scores, extracurricular activities, and essay evaluations.
-	•	Interpretability: Clear visual insights through SHAP explanations and radar charts.
-	•	Interactive Dashboard: Streamlit-based web application for user-friendly interaction.
+🌟 Key Highlights
+	•	🚀 Essay Analysis: GPT-driven scoring on content, language, and structure.
+	•	📊 Holistic Modeling: Predictive modeling using GPA, SAT scores, extracurricular activities, and essay scores.
+	•	🔍 Transparent Predictions: SHAP values and radar charts provide clear, interpretable insights.
+	•	💻 Interactive UI: Streamlit-based platform for intuitive exploration.
 
-🛠️ Built With
-	•	Python
-	•	XGBoost
-	•	Logistic Regression
-	•	Sentence Transformers (MiniLM)
-	•	SHAP (SHapley Additive exPlanations)
-	•	Streamlit
+⸻
 
-📖 Research & Publication
-	•	Targeting submission to ICMLA 2025 and relevant ESCI/Q4 AI-focused journals.
+🛠️ Tech Stack
 
-🚀 Getting Started
+Component	Technology
+Programming Language	Python 3.8+
+Predictive Models	XGBoost, Logistic Regression
+NLP & Embeddings	GPT API, Sentence Transformers (MiniLM)
+Interpretability	SHAP (SHapley Additive exPlanations)
+Frontend Visualization	Streamlit
 
-To use this project locally, clone the repository and install the dependencies:
+
+⸻
+
+🎥 Demo
+
+
+⸻
+
+🖥️ Installation & Quick Start
+
+Clone the repository and install dependencies:
 
 git clone <repository-url>
 cd college-admission-predictor
 pip install -r requirements.txt
 streamlit run app.py
 
-📈 Future Enhancements
-	•	Expand dataset for improved prediction accuracy.
-	•	Include university-specific admission criteria analysis.
 
-🤝 Contribution
+⸻
 
-Feel free to fork the repository and contribute enhancements or improvements. Collaboration and feedback are highly welcome!
+📖 Publications & Conferences
+	•	ICMLA 2025 (Planned submission)
+	•	Targeting ESCI/Q4 journals focused on AI and ML applications
+
+⸻
+
+🚧 Roadmap
+	•	Enhanced dataset collection and integration
+	•	University-specific insights and analytics
+	•	Expanded interpretability features
+
+⸻
+
+🤝 Contributing
+
+Contributions and feedback are highly encouraged! Please fork, contribute, and create pull requests.
+
+⸻
 
 📫 Contact
 
-For questions, suggestions, or collaborations, please reach out through GitHub or via email.
+For collaboration or inquiries, please contact via GitHub or email.
 
-Thank you for exploring the College Admission Predictor project! 🚀
+Thank you for checking out the College Admission Predictor! 🎉🚀
