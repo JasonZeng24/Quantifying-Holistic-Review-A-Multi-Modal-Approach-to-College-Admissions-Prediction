@@ -46,8 +46,8 @@ streamlit run app.py
 
 ## 📖 Publications & Conferences
 
-* **ICMLA 2025** (Planned submission)
-* Targeting ESCI/Q4 journals focused on AI and ML applications
+* **ICMLA 2025** 
+* arxiv:
 
 ---
 
