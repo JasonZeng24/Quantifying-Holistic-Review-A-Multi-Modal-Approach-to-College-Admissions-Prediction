@@ -39,7 +39,7 @@ A powerful machine learning application designed to predict undergraduate admiss
 Clone the repository and install dependencies:
 
 ```bash
-git clone <repository-url>
+git clone <[repository-url](https://github.com/JasonZeng24/Quantifying-Holistic-Review-A-Multi-Modal-Approach-to-College-Admissions-Prediction)>
 cd college-admission-predictor
 pip install -r requirements.txt
 streamlit run app.py
