@@ -11,6 +11,7 @@ from math import exp, isnan
 import os
 import plotly.graph_objects as go
 import logging
+import streamlit.components.v1 as components
 
 # --- 1. 页面配置和样式 (只保留一次，并使用更完整的配置) ---
 st.set_page_config(
@@ -429,7 +430,7 @@ with st.form("caps_form"):
                                  key="essay_prompt")
     essay_text = st.text_area("文书内容（建议粘贴主文书全文）", 
                                   height=300, 
-                                  value="\"So... does everyone get it?\" I asked. Twenty-five heads nodded. Some enthusiastically, some barely...", 
+                                  value="\"Start your essay here", 
                                   key="essay_text")
     st.markdown("---")
     
@@ -657,6 +658,20 @@ if submitted:
             ### **🛠️ 下一步建议**
             **深入分析，立即提升。** 深入分析你的分数构成，**找到最薄弱的环节**。思考是否有机会在截止日期前通过参加竞赛、重考标化、或深化活动等方式进行**实质性提升**。
             """)
-            
+
     except Exception as e:
         st.error(f"在计算过程中发生了一个意料之外的错误: {e}")
+st.set_page_config(layout="wide")
+
+st.title("我的访客地图")
+
+# 使用 components.html 嵌入 MapMyVisitors 的脚本
+# 你可能需要根据地图的实际显示效果调整 height 参数
+map_html = """
+<script type="text/javascript" 
+        id="mapmyvisitors" 
+        src="//mapmyvisitors.com/map.js?d=G22ZMDy2KEs5OGq6rS0JucNzUxHn13B0tIPWaEGNGJo&cl=ffffff&w=a">
+</script>
+"""
+components.html(map_html, height=500)
+st.markdown("<br>" * 10, unsafe_allow_html=True)
