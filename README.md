@@ -30,7 +30,7 @@ A powerful machine learning application designed to predict undergraduate admiss
 
 ## 🎥 Demo
 
-![Demo](path/to/demo.png)
+![Demo](path/to/[demo.png](https://capsprediction.streamlit.app/))
 
 ---
 
@@ -49,8 +49,8 @@ streamlit run app.py
 
 ## 📖 Publications & Conferences
 
-* **ICMLA 2025** 
-* arxiv:
+* **2025 International Conference on Image, Signal Processing and Machine Learning (ISPML 2025)** 
+* arxiv:http://arxiv.org/abs/2507.15862
 
 ---
 
