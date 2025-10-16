@@ -665,45 +665,29 @@ st.set_page_config(layout="wide")
 
 st.title("我的访客地图")
 
-# 使用 components.html 嵌入 MapMyVisitors 的脚本
-# 你可能需要根据地图的实际显示效果调整 height 参数
-import streamlit as st
-import streamlit.components.v1 as components
 
-# 使用一个 div 容器包裹 script，并用 transform: scale() 来缩放它
-import streamlit as st
-import streamlit.components.v1 as components
-
-# Use Flexbox correctly to center the content.
 map_html = """
 <!DOCTYPE html>
 <html>
 <head>
-  <title>ClustrMaps Globe</title>
+  <title>ClustrMaps</title>
   <style>
-    /* Ensure the container fills the entire iframe space */
     html, body {
       margin: 0;
       padding: 0;
-      height: 100%;
-    }
-    /* Use flexbox to center the child element (the script's output) */
-    body {
       display: flex;
-      justify-content: center; /* Center horizontally */
-      align-items: center;    /* Center vertically */
-      transform: scale(0.35);
+      justify-content: center;
+      align-items: center;
     }
   </style>
 </head>
 <body>
-  <script type="text/javascript" id="clstr_globe" src="//clustrmaps.com/globe.js?d=b6TIoDWDQalUCD6D23hrraFkyPQky1HEmQtA-iNIP7w"></script>
-</body>
+  <a href='https://clustrmaps.com/site/1c88k'  title='Visit tracker'><img src='//clustrmaps.com/map_v2.png?cl=ffffff&w=500&t=tt&d=b6TIoDWDQalUCD6D23hrraFkyPQky1HEmQtA-iNIP7w'/></a>
 </html>
 """
 
-# Embed the centered HTML component
-components.html(map_html, height=550, scrolling=False)
+# Adjust the height to better fit the new width
+components.html(map_html, height=500)
 
 # Your markdown for spacing is perfectly fine
-st.markdown("<br>" * 10, unsafe_allow_html=True)
+st.markdown("<br>" * 5, unsafe_allow_html=True)
