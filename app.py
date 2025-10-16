@@ -667,11 +667,43 @@ st.title("我的访客地图")
 
 # 使用 components.html 嵌入 MapMyVisitors 的脚本
 # 你可能需要根据地图的实际显示效果调整 height 参数
+import streamlit as st
+import streamlit.components.v1 as components
+
+# 使用一个 div 容器包裹 script，并用 transform: scale() 来缩放它
+import streamlit as st
+import streamlit.components.v1 as components
+
+# Use Flexbox correctly to center the content.
 map_html = """
-<script type="text/javascript" 
-        id="mapmyvisitors" 
-        src="//mapmyvisitors.com/map.js?d=G22ZMDy2KEs5OGq6rS0JucNzUxHn13B0tIPWaEGNGJo&cl=ffffff&w=a">
-</script>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ClustrMaps Globe</title>
+  <style>
+    /* Ensure the container fills the entire iframe space */
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+    /* Use flexbox to center the child element (the script's output) */
+    body {
+      display: flex;
+      justify-content: center; /* Center horizontally */
+      align-items: center;    /* Center vertically */
+      transform: scale(0.35);
+    }
+  </style>
+</head>
+<body>
+  <script type="text/javascript" id="clstr_globe" src="//clustrmaps.com/globe.js?d=b6TIoDWDQalUCD6D23hrraFkyPQky1HEmQtA-iNIP7w"></script>
+</body>
+</html>
 """
-components.html(map_html, height=500)
+
+# Embed the centered HTML component
+components.html(map_html, height=550, scrolling=False)
+
+# Your markdown for spacing is perfectly fine
 st.markdown("<br>" * 10, unsafe_allow_html=True)
