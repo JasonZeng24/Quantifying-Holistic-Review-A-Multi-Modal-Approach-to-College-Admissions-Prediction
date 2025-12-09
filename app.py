@@ -13,34 +13,34 @@ import plotly.graph_objects as go
 import logging
 import streamlit.components.v1 as components
 
-# --- 1. 页面配置和样式 (只保留一次，并使用更完整的配置) ---
+# --- 1. Page Config & Styling ---
 st.set_page_config(
-    page_title="CAPS: 大学申请整体评估系统",
+    page_title="CAPS: College Application Prediction System",
     layout="wide", 
-    initial_sidebar_state="expanded" # 默认展开侧边栏，方便用户输入 API Key
+    initial_sidebar_state="expanded"
 )
 
 st.markdown("""
 <style>
-/* 标题美化 */
+/* Header Styling */
 .stApp header {
     background-color: transparent;
 }
 .stApp [data-testid="stTitle"] {
-    color: #4A0099; /* 主题紫色 */
+    color: #4A0099; /* Theme Purple */
     font-weight: 800;
 }
-/* 提升主容器美观度 */
+/* Main Container Styling */
 .block-container {
     padding-top: 2rem;
     padding-bottom: 0rem;
     padding-left: 2rem;
     padding-right: 2rem;
 }
-/* 自定义Metric卡片 */
+/* Custom Metric Card */
 div[data-testid="stMetricValue"] {
     font-size: 28px;
-    color: #6A0DAD; /* 强调色 */
+    color: #6A0DAD; /* Accent Color */
 }
 div[data-testid="stMetricLabel"] {
     font-size: 14px;
@@ -50,30 +50,28 @@ div[data-testid="stMetricLabel"] {
 """, unsafe_allow_html=True)
 
 
-# --- 侧边栏配置 (修复 Key 冲突) ---
+# --- Sidebar Config ---
 with st.sidebar:
-    st.title("⚙️ 系统配置与工具")
+    st.title("⚙️ Configuration")
     
-    # 修复点: 确保 key 唯一
-    OPENAI_API_KEY = st.text_input("OpenAI API Key (必需)", "sk-...", type="password", key="sidebar_api_key_input")
+    OPENAI_API_KEY = st.text_input("OpenAI API Key (Required)", "sk-...", type="password", key="sidebar_api_key_input")
 
-# --- 2. 初始化和模型加载 (使用侧边栏的输入值，如果可用) ---
+# --- 2. Init & Model Loading ---
 
-# --- OpenAI API Key ---
 OPENAI_BASE_URL = "https://api.gptsapi.net/v1" 
 
-# 初始化客户端和日志
+# Init Client
 try:
     client = OpenAI(api_key=st.session_state.get("sidebar_api_key_input"), base_url=OPENAI_BASE_URL)
 except Exception as e:
-    logging.warning(f"OpenAI客户端初始化失败，功能受限: {e}") 
+    logging.warning(f"OpenAI Client Init Failed: {e}") 
 
 logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
 @st.cache_resource
 def load_models():
-    """加载所有模型和数据文件"""
+    """Load all models and data files"""
     try:
         scaler = joblib.load("sas_scaler.pkl")
         with open("sas_fused_weights.json", "r") as f:
@@ -86,7 +84,7 @@ def load_models():
         
         return scaler, fused_weights_dict, eqi_model, embed_model
     except FileNotFoundError as e:
-        st.error(f"错误：缺少必要的模型文件 -> {e.filename}。请确保所有 .pkl 和 .json 文件与 app.py 在同一个文件夹中。")
+        st.error(f"Error: Missing model file -> {e.filename}. Please ensure all .pkl and .json files are in the same directory as app.py.")
         return None, None, None, None
 
 models = load_models()
@@ -94,7 +92,7 @@ if any(model is None for model in models):
     st.stop()
 scaler, fused_weights_dict, eqi_model, embed_model = models
 
-# --- ⭐️ AI解析EC文本 (函数部分) ---
+# --- ⭐️ AI Parser for EC Text ---
 def parse_ec_text_with_ai(raw_text: str):
     tier_definitions = """
     T1: National or international-level leadership or achievement (e.g., Olympiad medalist, startup founder).
@@ -160,7 +158,7 @@ def parse_ec_text_with_ai(raw_text: str):
         return []
 
 
-# --- 2. SAS 模块函数 (保持不变) ---
+# --- 2. SAS Module ---
 feature_order = ["GPA", "SAT", "TOEFL", "AP_5_Count", "Course_Difficulty"]
 fused_weights = np.array([fused_weights_dict.get(f, 0) for f in feature_order])
 
@@ -179,7 +177,7 @@ def compute_sas_score(user_input: dict) -> float:
     scaled_score = (sas_raw - 0.2) / (1.0 - 0.2)
     return round(min(max(scaled_score, 0.0), 1.0), 4)
 
-# --- 3. EQI 模块函数 (保持不变) ---
+# --- 3. EQI Module ---
 GPT_MODEL = "gpt-4o"
 
 def get_gpt_scores(essay_text: str) -> dict:
@@ -210,7 +208,7 @@ def get_gpt_scores(essay_text: str) -> dict:
         if len(score_dict) != 3: return {"EssayContentScore": 3.0, "EssayLanguageScore": 3.0, "EssayStructureScore": 3.0}
         return score_dict
     except Exception as e:
-        st.warning(f"EQI GPT评分失败: {e}")
+        st.warning(f"EQI GPT Scoring Failed: {e}")
         return {"EssayContentScore": 3.0, "EssayLanguageScore": 3.0, "EssayStructureScore": 3.0}
 
 def get_prompt_alignment(essay_text: str, prompt_text: str) -> tuple:
@@ -229,11 +227,11 @@ def get_prompt_alignment(essay_text: str, prompt_text: str) -> tuple:
         if not match: raise ValueError("No valid alignment score found in GPT response.")
         alignment_score = float(match.group(1))
         explanation_match = re.search(r"Explanation\s*[:：]\s*(.*)", response_content, re.DOTALL | re.IGNORECASE)
-        explanation = explanation_match.group(1).strip() if explanation_match else "未能提取解释。"
+        explanation = explanation_match.group(1).strip() if explanation_match else "Unable to extract explanation."
         return alignment_score, explanation
     except Exception as e:
-        st.warning(f"EQI Prompt对齐度评估失败: {e}")
-        return 0.75, "GPT评估出现问题，使用默认值。"
+        st.warning(f"EQI Prompt Alignment Failed: {e}")
+        return 0.75, "GPT evaluation issue. Using default value."
 
 def apply_sigmoid_curve(eqi_raw, alignment_score, k=4, x0=0.3, min_val=0.6):
     base_sigmoid = 1 / (1 + exp(-k * (alignment_score - x0)))
@@ -258,8 +256,8 @@ def get_eqi_feedback(essay_text, essay_prompt, gpt_scores, alignment_score):
         response = client.chat.completions.create(model=GPT_MODEL, messages=[{"role": "user", "content": prompt}], temperature=0.3)
         return response.choices[0].message.content.strip()
     except Exception as e:
-        st.warning(f"EQI反馈生成失败: {e}")
-        return "未能生成反馈。"
+        st.warning(f"EQI Feedback Generation Failed: {e}")
+        return "Unable to generate feedback."
         
 def evaluate_essay_full(essay_text: str, essay_prompt: str):
     gpt_scores = get_gpt_scores(essay_text)
@@ -268,7 +266,7 @@ def evaluate_essay_full(essay_text: str, essay_prompt: str):
     for col, score in gpt_scores.items():
         df[col] = score
     
-    # 确保列顺序与训练时一致
+    # Ensure column order matches training
     feature_names = eqi_model.get_booster().feature_names
     df = df[feature_names]
 
@@ -285,7 +283,7 @@ def evaluate_essay_full(essay_text: str, essay_prompt: str):
         "suggestions": suggestions
     }
 
-# --- 4. EIS 模块函数 (保持不变) ---
+# --- 4. EIS Module ---
 tier_mapping = {"T1": 1.0, "T2": 0.8, "T3": 0.6, "T4": 0.4, "T5": 0.2}
 
 def get_eis_activity_gpt_score(activity_description: str) -> float:
@@ -299,7 +297,7 @@ def get_eis_activity_gpt_score(activity_description: str) -> float:
         score = float(score_str)
         return round(min(max(score, 0.0), 1.0), 4)
     except Exception as e:
-        st.warning(f"EIS单项活动评分失败: {e}")
+        st.warning(f"EIS Single Activity Scoring Failed: {e}")
         return 0.5
 
 def evaluate_coherence_gpt(descriptions: list) -> float:
@@ -314,11 +312,9 @@ def evaluate_coherence_gpt(descriptions: list) -> float:
         score = float(response.choices[0].message.content.strip())
         return round(min(max(score, 0.0), 1.0), 4)
     except Exception as e:
-        st.warning(f"EIS连贯性评估失败: {e}")
+        st.warning(f"EIS Coherence Evaluation Failed: {e}")
         return 0.7
 
-# 新的、更优的EIS计算函数
-# 新的、更优的EIS计算函数
 def evaluate_activities_weighted(activity_list: list, alpha: float = 0.5):
     if not activity_list:
         return pd.DataFrame(columns=["Activity", "Tier", "GPT_Score", "EIS_Score", "Weight"]), 0.0
@@ -335,16 +331,16 @@ def evaluate_activities_weighted(activity_list: list, alpha: float = 0.5):
             "EIS_Score": eis_score
         })
 
-    # 1. 按分数从高到低排序
+    # 1. Sort by score high to low
     sorted_activities = sorted(results, key=lambda x: x["EIS_Score"], reverse=True)
     
-    # 2. 生成衰减权重 (1, 1/2, 1/3, ...)
+    # 2. Generate decay weights
     decay_weights = np.array([1 / (i + 1) for i in range(len(sorted_activities))])
     
-    # 3. 归一化权重，使总和为1
+    # 3. Normalize weights
     normalized_weights = decay_weights / np.sum(decay_weights)
     
-    # 4. 计算加权平均分
+    # 4. Calculate weighted avg
     weighted_avg_eis = 0
     display_results = []
     for i, activity in enumerate(sorted_activities):
@@ -354,12 +350,12 @@ def evaluate_activities_weighted(activity_list: list, alpha: float = 0.5):
             "Activity": activity["Name"],
             "Tier": activity["Tier"],
             "EIS_Score": activity["EIS_Score"],
-            "Weight": f"{weight:.2%}" # 以百分比形式显示权重
+            "Weight": f"{weight:.2%}" 
         })
     
     df_display = pd.DataFrame(display_results)
 
-    # 5. 应用连贯性曲线
+    # 5. Apply coherence curve
     all_descriptions = [act["Description"] for act in sorted_activities]
     coherence = evaluate_coherence_gpt(all_descriptions)
     final_eis_weighted = round(weighted_avg_eis * (0.85 + 0.15 * coherence), 4)
@@ -367,8 +363,8 @@ def evaluate_activities_weighted(activity_list: list, alpha: float = 0.5):
     return df_display, final_eis_weighted
 
 # --- 4. Streamlit UI ---
-st.title("🎓 CAPS: 大学申请整体评估系统")
-st.markdown("---") # 分割线
+st.title("🎓 CAPS: College Application Prediction System")
+st.markdown("---")
 
 if 'activities' not in st.session_state:
     st.session_state.activities = [
@@ -376,159 +372,157 @@ if 'activities' not in st.session_state:
         {"name": "Sample Activity 2", "desc": "Description for sample activity 2.", "tier": "T3"},
     ]
 
-# --- 主输入表单 ---
+# --- Main Input Form ---
 with st.form("caps_form"):
     
-    # === 1. 学术背景 (SAS) ===
-    st.header("1. 👤 学术背景 (SAS)")
-    st.markdown("请量化您的**标准化**学术表现：")
-    with st.expander("💡 什么是SAS分数？（点击查看详情）"):
+    # === 1. Academic Background (SAS) ===
+    st.header("1. 👤 Academic Background (SAS)")
+    st.markdown("Please quantify your **standardized** academic performance:")
+    with st.expander("💡 What is SAS? (Click for details)"):
         st.markdown("""
-                    **SAS (Standardized Academic Score)** 是对您学术竞争力的量化评估。根据您的论文，它综合了以下几个方面：
-                    * **GPA**: 在校平均成绩
-                    * **标化成绩**: SAT 或 ACT 分数
-                    * **语言成绩**: 托福 (TOEFL) 或 雅思 (IELTS) 分数
-                    * **AP/高阶课程数量**: 获得5分的AP考试数量
-                    * **课程难度**: 您高中课程的整体挑战性
+                    **SAS (Standardized Academic Score)** is a quantitative evaluation of your academic competitiveness. Based on our research, it synthesizes:
+                    * **GPA**: High school Grade Point Average.
+                    * **Standardized Tests**: SAT or ACT scores.
+                    * **Language Proficiency**: TOEFL or IELTS scores.
+                    * **AP/Advanced Course Count**: Number of AP exams with a score of 5 (or equivalent high achievement).
+                    * **Course Difficulty**: The overall rigor of your high school curriculum.
                     """)
-    # 使用列来优化布局
+    
     col_gpa, col_ap, col_diff = st.columns(3)
     gpa = col_gpa.number_input("**GPA (0.0-4.0)**", 0.0, 4.0, 3.9, 0.01, key="input_gpa")
-    ap_count = col_ap.number_input("**AP AP/高阶课程数量**", 0, 20, 5, 1, key="input_ap_count")
-    course_diff = col_diff.slider("**高中课程难度**", 1, 5, 4, help="5为最高难度，代表您选修了大量AP/IB/A-Level等高阶课程(10+)。", key="input_course_diff")
+    ap_count = col_ap.number_input("**Count of 5s in AP/Advanced Courses**", 0, 20, 5, 1, key="input_ap_count")
+    course_diff = col_diff.slider("**Course Rigor**", 1, 5, 4, help="5 is maximum rigor, indicating 10+ AP/IB/A-Level courses.", key="input_course_diff")
     st.markdown("---")
     
     col_sat_act, col_sat, col_lang_test, col_lang = st.columns(4)
-    test_type = col_sat_act.radio("**标化考试类型**", ("SAT", "ACT"), horizontal=True, key="test_type")
+    test_type = col_sat_act.radio("**Test Type**", ("SAT", "ACT"), horizontal=True, key="test_type")
     
     if test_type == "SAT":
-        sat_score = col_sat.number_input("SAT 总分", 1000, 1600, 1520, 10, key="input_sat")
+        sat_score = col_sat.number_input("SAT Total", 1000, 1600, 1520, 10, key="input_sat")
         act_score = None
     else:
-        act_score = col_sat.number_input("ACT 总分", 1, 36, 34, 1, key="input_act")
+        act_score = col_sat.number_input("ACT Total", 1, 36, 34, 1, key="input_act")
         sat_score = None
         
-    lang_test_type = col_lang_test.radio("**语言考试类型**", ("TOEFL", "IELTS"), horizontal=True, key="lang_test_type")
+    lang_test_type = col_lang_test.radio("**Language Test**", ("TOEFL", "IELTS"), horizontal=True, key="lang_test_type")
     
     if lang_test_type == "TOEFL":
-        toefl_score = col_lang.number_input("TOEFL 分数", 0.0, 120.0, 110.0, 1.0, key="input_toefl")
+        toefl_score = col_lang.number_input("TOEFL Score", 0.0, 120.0, 110.0, 1.0, key="input_toefl")
         ielts_score = None
     else:
-        ielts_score = col_lang.number_input("IELTS 分数", 0.0, 9.0, 8.0, 0.5, key="input_ielts")
+        ielts_score = col_lang.number_input("IELTS Score", 0.0, 9.0, 8.0, 0.5, key="input_ielts")
         toefl_score = None
     
     st.markdown("---")
 
-    # === 2. 申请文书 (EQI) ===
-    st.header("2. 📝 申请文书 (EQI)")
-    st.markdown("文书是展示**个人特质**的关键环节。")
-    with st.expander("💡 什么是EQI分数？（点击查看详情）"):
-        st.markdown("""**EQI (Essay Quality Index)** 是对文书质量的综合评估。它利用自然语言处理（NLP）和大型语言模型（LLM）来分析您文书的**主题内容、语言结构、以及与题目（Prompt）的契合度**，最终生成一个量化分数。""")
+    # === 2. Essays (EQI) ===
+    st.header("2. 📝 Essays (EQI)")
+    st.markdown("Essays are critical for demonstrating **personal qualities**.")
+    with st.expander("💡 What is EQI? (Click for details)"):
+        st.markdown("""**EQI (Essay Quality Index)** evaluates the quality of your writing. It uses NLP and LLMs to analyze your **theme, structure, language, and alignment with the prompt**, generating a quantitative score.""")
 
-    essay_prompt = st.text_input("文书题目 (Common App 或其他)",
+    essay_prompt = st.text_input("Essay Prompt (Common App or other)",
                                  value="Discuss an accomplishment, event, or realization that sparked a period of personal growth and a new understanding of yourself or others.", 
                                  key="essay_prompt")
-    essay_text = st.text_area("文书内容（建议粘贴主文书全文）", 
-                                  height=300, 
-                                  value="\"Start your essay here", 
-                                  key="essay_text")
+    essay_text = st.text_area("Essay Content (Paste full text here)", 
+                              height=300, 
+                              value="Start your essay here...", 
+                              key="essay_text")
     st.markdown("---")
     
-    # === 3. 课外活动 (EIS) ===
-    st.header("3. 🌍 课外活动 (EIS)")
-    st.markdown("请在下方管理和输入您的课外活动列表：")
+    # === 3. Extracurriculars (EIS) ===
+    st.header("3. 🌍 Extracurriculars (EIS)")
+    st.markdown("Manage and input your activity list below:")
     
-    with st.expander("💡 活动等级 (Tier) 定义详解（点击展开）", expanded=True):
+    with st.expander("💡 Tier Definitions (Click to expand)", expanded=True):
         st.markdown("""
-        Tier（等级）是衡量课外活动影响力和成就水平的一种方式。请根据以下定义为你的每项活动选择最合适的等级：
-        | 等级 | 成就水平 | 示例 |
+        Tiers measure the impact and achievement level of an activity. Select the most appropriate tier based on these definitions:
+        | Tier | Achievement Level | Examples |
         | :--- | :--- | :--- |
-        | **T1** | **国家/国际级顶尖** | 国际奥赛奖牌、拥有一定影响力的创业公司创始人、在知名期刊发表研究  |
-        | **T2** | **州/区域级重要** | 州级竞赛冠军、大型会议组织者、非盈利组织主管  |
-        | **T3** | **校级/持续领导力** | 学生会主席、校队队长、校级重要奖项  |
-        | **T4** | **持续参与/无领导** | 俱乐部活跃成员、持续社区志愿者  |
-        | **T5** | **参与度有限或短期** | 单次活动参与者、普通兴趣爱好  |
+        | **T1** | **Top National/International** | Olympiad medalist, founder of impactful startup, research published in top journal. |
+        | **T2** | **Major State/Regional** | State champion, large conference organizer, head of regional non-profit. |
+        | **T3** | **School Level/Sustained Leadership** | Student Body President, Varsity Captain, major school awards. |
+        | **T4** | **General Involvement** | Active club member, consistent community volunteer. |
+        | **T5** | **Limited/Short-term** | One-time participation, casual hobbies. |
         """)
 
-    # 表格头部
+    # Table Header
     cols_header = st.columns([3, 5, 2])
-    cols_header[0].markdown("**活动名称/角色**")
-    cols_header[1].markdown("**活动描述/成就**")
-    cols_header[2].markdown("**等级 (Tier)**")
+    cols_header[0].markdown("**Activity Name/Role**")
+    cols_header[1].markdown("**Description/Achievements**")
+    cols_header[2].markdown("**Tier**")
     
-    # 循环输入
+    # Input Loop
     for i, activity in enumerate(st.session_state.activities):
         cols = st.columns([3, 5, 2])
         st.session_state.activities[i]["name"] = cols[0].text_input(f"Activity {i+1} Name", value=activity.get("name", ""), key=f"name_{i}", label_visibility="collapsed")
         st.session_state.activities[i]["desc"] = cols[1].text_area(f"Activity {i+1} Desc", value=activity.get("desc", ""), key=f"desc_{i}", height=100, label_visibility="collapsed")
         st.session_state.activities[i]["tier"] = cols[2].selectbox(f"Activity {i+1} Tier", options=["T1", "T2", "T3", "T4", "T5"], index=["T1", "T2", "T3", "T4", "T5"].index(activity.get("tier", "T3")), key=f"tier_{i}", label_visibility="collapsed")
 
-    submitted = st.form_submit_button("🚀 计算 CAPS 评估分数", use_container_width=True, type="primary")
+    submitted = st.form_submit_button("🚀 Calculate CAPS Score", use_container_width=True, type="primary")
 
-# --- 活动列表管理工具 (必须放在表单外部) ---
-with st.expander("🛠️ 活动列表工具 (AI填充, 添加/删除)"):
-    st.subheader("🤖 AI 快速导入")
-    raw_ec_text = st.text_area("将所有活动描述一次性粘贴到这里...", height=150)
-    if st.button("AI 自动填充列表"):
+# --- Activity List Tools (Must be outside form) ---
+with st.expander("🛠️ Activity Tools (AI Import, Add/Delete)"):
+    st.subheader("🤖 AI Quick Import")
+    raw_ec_text = st.text_area("Paste all activity descriptions here at once...", height=150)
+    if st.button("AI Auto-Fill List"):
         if raw_ec_text and OPENAI_API_KEY and "sk-..." not in OPENAI_API_KEY:
-            with st.spinner("🤖 AI 正在解析..."):
+            with st.spinner("🤖 AI Parsing..."):
                 parsed_activities = parse_ec_text_with_ai(raw_ec_text)
                 if parsed_activities:
                     st.session_state.activities = parsed_activities
-                    st.success("AI 填充成功！列表已更新。")
+                    st.success("AI Import Successful! List updated.")
                     st.rerun()
         else:
-            st.warning("请在侧边栏输入API Key并在此处粘贴活动文本。")
+            st.warning("Please enter your API Key in the sidebar and paste text here.")
     
     st.markdown("---")
-    st.subheader("手动管理")
+    st.subheader("Manual Management")
     col1, col2, _ = st.columns([1, 1, 4])
-    if col1.button("➕ 添加新活动"):
+    if col1.button("➕ Add Activity"):
         st.session_state.activities.append({"name": "", "desc": "", "tier": "T3"})
         st.rerun()
-    if col2.button("➖ 删除最后活动"):
+    if col2.button("➖ Remove Last"):
         if st.session_state.activities:
             st.session_state.activities.pop()
             st.rerun()
 
 
-# --- 5. 提交后的计算和结果展示 ---
+# --- 5. Calculation & Results ---
 if submitted:
-    # 检查实际使用的 API Key（侧边栏输入的值）
+    # Check API Key
     current_api_key = st.session_state.get("sidebar_api_key_input")
     if not current_api_key or "sk-..." in current_api_key:
-        st.error("请在左侧**侧边栏**输入您的 OpenAI API Key。")
+        st.error("Please enter your OpenAI API Key in the **Sidebar**.")
         st.stop()
     
     try:
-        # --- 计算部分 (调用您的真实函数) ---
-        with st.spinner('⏳ 正在分析您的学术背景 (SAS)...'):
+        # --- Calculations ---
+        with st.spinner('⏳ Analyzing Academic Background (SAS)...'):
             sas_input = {"GPA": gpa, "AP_5_Count": ap_count, "Course_Difficulty": course_diff}
             sas_input["SAT"] = sat_score if sat_score is not None else convert_act_to_sat(act_score)
             sas_input["TOEFL"] = toefl_score if toefl_score is not None else convert_ielts_to_toefl(ielts_score)
             sas_final_score = compute_sas_score(sas_input)
 
-        # 修正后的代码 ✅
-        with st.spinner('正在评估您的课外活动 (EIS)...'):
-        # 将 "Name", "Description", "Tier" 改为 "name", "desc", "tier"
+        with st.spinner('Evaluating Extracurriculars (EIS)...'):
             eis_activities = [{"name": a.get("name", ""), "desc": a.get("desc", ""), "tier": a.get("tier", "T3")} for a in st.session_state.activities if a.get("name")]
             eis_df, eis_final_score = evaluate_activities_weighted(eis_activities)
 
-        with st.spinner('⏳ 正在深度解析您的申请文书 (EQI)...'):
+        with st.spinner('⏳ Deeply Analyzing Essays (EQI)...'):
             eqi_results = evaluate_essay_full(essay_text, essay_prompt)
             eqi_final_score = eqi_results['eqi_final']
             
-        st.success("🎉 评估完成！")
+        st.success("🎉 Assessment Complete!")
 
-        # --- 结果展示部分 (保持不变) ---
+        # --- Results Display ---
         weights = {'SAS': 0.40, 'EQI': 0.31, 'EIS': 0.29}
         caps_score = (sas_final_score * weights['SAS'] + eqi_final_score * weights['EQI'] + eis_final_score * weights['EIS'])
         
-        # 1. 总分展示
-        st.header("📈 综合评估结果 (CAPS)")
+        # 1. Total Score
+        st.header("📈 Comprehensive Assessment Result (CAPS)")
         st.markdown(f"""
         <div style="text-align: center; padding: 25px; border-radius: 12px; background-color: #f7f0ff; border: 2px solid #6A0DAD;">
-            <p style="font-size: 26px; font-weight: bold; color: #4B0082; margin: 0;">您的综合申请人档案分数 (CAPS)</p>
+            <p style="font-size: 26px; font-weight: bold; color: #4B0082; margin: 0;">Your Comprehensive Applicant Profile Score (CAPS)</p>
             <p style="font-size: 72px; font-weight: extra-bold; color: #6A0DAD; margin: 0; line-height: 1.2;">{caps_score:.1%}</p>
         </div>
         """, unsafe_allow_html=True)
@@ -536,135 +530,134 @@ if submitted:
         st.progress(caps_score)
         st.markdown("---")
         
-        # 2. 各模块分数详情
-        st.subheader("📊 各模块分数详情")
+        # 2. Module Details
+        st.subheader("📊 Module Scores")
         col1, col2, col3 = st.columns(3)
-        col1.metric("学术分数 (SAS)", f"{sas_final_score:.2%}")
-        col2.metric("文书分数 (EQI)", f"{eqi_final_score:.2%}")
-        col3.metric("活动分数 (EIS)", f"{eis_final_score:.2%}")
+        col1.metric("Academics (SAS)", f"{sas_final_score:.2%}")
+        col2.metric("Essays (EQI)", f"{eqi_final_score:.2%}")
+        col3.metric("Activities (EIS)", f"{eis_final_score:.2%}")
 
-        # 3. 雷达图
+        # 3. Radar Chart
         fig = go.Figure()
         fig.add_trace(go.Scatterpolar(
             r=[sas_final_score*100, eqi_final_score*100, eis_final_score*100],
-            theta=['学术 (SAS)', '文书 (EQI)', '活动 (EIS)'], fill='toself', name='您的分数',
+            theta=['Academics (SAS)', 'Essays (EQI)', 'Activities (EIS)'], fill='toself', name='Your Score',
             marker=dict(color="#6A0DAD"), line=dict(color="#6A0DAD")
         ))
         fig.update_layout(
             polar=dict(radialaxis=dict(visible=True, range=[0, 100], ticksuffix="%")), 
             showlegend=False, 
-            title=dict(text="三大核心能力雷达图", font=dict(size=18)),
+            title=dict(text="Core Competency Radar", font=dict(size=18)),
             margin=dict(l=40, r=40, t=60, b=40)
         )
         st.plotly_chart(fig, use_container_width=True)
 
-        # 4. 详细反馈 (精简与分组)
-        st.subheader("📝 详细反馈与建议")
+        # 4. Detailed Feedback
+        st.subheader("📝 Detailed Feedback & Suggestions")
         
         col_eqi, col_eis = st.columns(2)
         
-        with col_eqi.expander("文书 (EQI) 深度解析"):
-            st.markdown(f"**Prompt 对齐度**: **{eqi_results['alignment_score']:.2f}**")
+        with col_eqi.expander("Essay (EQI) Deep Dive"):
+            st.markdown(f"**Prompt Alignment**: **{eqi_results['alignment_score']:.2f}**")
             st.markdown(eqi_results['alignment_feedback'])
             st.markdown("---")
-            st.markdown("**AI 综合建议:**"); st.markdown(eqi_results['suggestions'])
+            st.markdown("**AI Suggestions:**"); st.markdown(eqi_results['suggestions'])
             
-        with col_eis.expander("活动 (EIS) 详细列表"):
+        with col_eis.expander("Activity (EIS) Details"):
             st.dataframe(eis_df, hide_index=True, use_container_width=True)
-            st.markdown(f"**活动总分 (EIS):** `{eis_final_score:.2%}`")
+            st.markdown(f"**Total Activity Score (EIS):** `{eis_final_score:.2%}`")
 
 
-        # 5. CAPS 解读 (保持不变)
+        # 5. CAPS Interpretation
         st.markdown("---")
-        st.header("💡 如何解读你的CAPS分数？")
-        st.info("⚠️ **重要声明**: 以下解读仅为宏观层面的大致参考，旨在帮助你了解个人档案的相对竞争力，绝不构成任何形式的录取保证。")
+        st.header("💡 How to Interpret Your CAPS Score?")
+        st.info("⚠️ **Important Disclaimer**: The following interpretation is for high-level reference only and allows you to understand the relative competitiveness of your profile. It does NOT constitute a guarantee of admission.")
 
         score_percent = caps_score * 100
-        # 此处使用上次优化后的 if/elif 结构进行分数解读
+        
         if score_percent >= 96:
-            st.subheader(f"✅ 你的分数段: {score_percent:.1f}% (A+)")
+            st.subheader(f"✅ Your Range: {score_percent:.1f}% (A+)")
             st.markdown("""
-            ### **🥇 竞争力分析**
-            **极具竞争力。** 你的档案在学术、文书和活动三个维度上均表现出**顶尖水平**，属于全球最优秀申请人之列。
+            ### **🥇 Competitiveness Analysis**
+            **Extremely Competitive.** Your profile demonstrates **top-tier** performance across Academics, Essays, and Activities, placing you among the most competitive applicants globally.
 
-            ### **🌍 参考学校层级**
-            你是全球**最顶尖大学**（Ivy, MIT、Stanford、Caltech，录取率低于10%）的**有力竞争者**。
+            ### **🌍 Reference School Tier**
+            You are a **strong contender** for the world's **most elite universities** (Ivy League, MIT, Stanford, Caltech, with acceptance rates <10%).
 
-            ### **🛠️ 下一步建议**
-            保持优势。重点是**精心打磨申请材料的每一个细节**，确保文书能呈现一个**独特、深刻且有深度**的个人故事。避免任何低级错误。
+            ### **🛠️ Next Steps**
+            Maintain your edge. Focus on **polishing every detail** of your application. Ensure your essays present a **unique, profound, and deep** personal story. Avoid any unforced errors.
             """)
 
         elif score_percent >= 90:
-            st.subheader(f"⭐ 你的分数段: {score_percent:.1f}% (A)")
+            st.subheader(f"⭐ Your Range: {score_percent:.1f}% (A)")
             st.markdown("""
-            ### **🌟 竞争力分析**
-            **非常强劲。** 你的档案在各方面都表现出色，具备**冲击最顶尖名校**的实力，是 Top 20 院校的有力候选人。
+            ### **🌟 Competitiveness Analysis**
+            **Very Strong.** Your profile is excellent in all aspects. You have the strength to **challenge top-tier schools** and are a strong candidate for Top 20 institutions.
 
-            ### **🇺🇸 参考学校层级**
-            你有很大机会被**顶尖大学**（如 Top 20，例如UCLA, UCB, Rice, Vandy, Cornell, JHU, UChi）录取，同时也是更顶尖学校的**合格候选人**。
+            ### **🇺🇸 Reference School Tier**
+            You have a high chance of admission to **Top Universities** (Top 20, e.g., UCLA, UCB, Rice, Vandy, Cornell, JHU, UChi), and are a qualified candidate for even higher-ranked schools.
 
-            ### **🛠️ 下一步建议**
-            **找出短板并弥补。** 检查是否存在某个维度的突出不足。思考如何通过**文书**将你的多方面亮点串联成一个**有说服力的、一致的故事**。
+            ### **🛠️ Next Steps**
+            **Identify and bridge gaps.** Check for any slight weaknesses. Consider how to use your **essays** to connect your various highlights into a **persuasive and consistent narrative**.
             """)
 
         elif score_percent >= 85:
-            st.subheader(f"⚡ 你的分数段: {score_percent:.1f}% (A / A-)")
+            st.subheader(f"⚡ Your Range: {score_percent:.1f}% (A / A-)")
             st.markdown("""
-            ### **🚀 竞争力分析**
-            **高度竞争力。** 档案基础扎实且优秀，在竞争激烈的 Top 25 申请池中具有明显优势。
+            ### **🚀 Competitiveness Analysis**
+            **Highly Competitive.** Your profile is solid and excellent, giving you a distinct advantage in the competitive Top 25 applicant pool.
 
-            ### **🏫 参考学校层级**
-            你有很大机会被**高排位大学**（如 Top 25，例如 CMU(非CS相关), UMich, WashU, UVA, Emory）录取。关键在于**选校策略**和**文书的区分度**。
+            ### **🏫 Reference School Tier**
+            You have a high chance of admission to **High-Ranking Universities** (Top 25, e.g., CMU (non-CS), UMich, WashU, UVA, Emory). Key factors will be **school selection strategy** and **essay differentiation**.
 
-            ### **🛠️ 下一步建议**
-            **强调差异化。** 你的分数很接近 Top 20 门槛，需重点在**文书和活动细节**上突出你的独特价值和兴趣深度，避免被“分数优秀但无特色”的申请者淹没。
+            ### **🛠️ Next Steps**
+            **Emphasize Differentiation.** Your score is very close to the Top 20 threshold. Focus on highlighting unique values and depth of interest in your **essays and activity descriptions** to avoid being "excellent but generic."
             """)
 
         elif score_percent >= 80:
-            st.subheader(f"📈 你的分数段: {score_percent:.1f}% (A- / B+)")
+            st.subheader(f"📈 Your Range: {score_percent:.1f}% (A- / B+)")
             st.markdown("""
-            ### **💪 竞争力分析**
-            **较强竞争力。** 档案整体优秀，在 Top 30 甚至更高排位学校的申请池中有一席之地。
+            ### **💪 Competitiveness Analysis**
+            **Strong Competitiveness.** Your profile is generally excellent, earning you a place in the pool for Top 30 or higher-ranked schools.
 
-            ### **🎯 参考学校层级**
-            你有很大机会被**优秀大学**（如 Top 30，例如 NYU, USC, UCSD）录取。通过合理的选校可以确保录取结果。
+            ### **🎯 Reference School Tier**
+            You have a strong chance of admission to **Excellent Universities** (Top 30, e.g., NYU, USC, UCSD). A smart school list can secure good results.
 
-            ### **🛠️ 下一步建议**
-            **聚焦转化。** 分数已达标，重点在于**高效利用文书和推荐信**，将量化的优秀（分数）转化为招生官眼中有血有肉、未来可期的潜力（故事）。
+            ### **🛠️ Next Steps**
+            **Focus on Conversion.** Your scores are sufficient; the key is **efficiently using essays and recommendation letters** to convert quantitative excellence (scores) into a vivid, high-potential persona (story).
             """)
 
         elif score_percent >= 70:
-            st.subheader(f"👍 你的分数段: {score_percent:.1f}% (B+ / B)")
+            st.subheader(f"👍 Your Range: {score_percent:.1f}% (B+ / B)")
             st.markdown("""
-            ### **📊 竞争力分析**
-            **良好竞争力。** 你的档案整体稳健，是大多数优秀大学申请池中的**可靠申请者**。
+            ### **📊 Competitiveness Analysis**
+            **Good Competitiveness.** Your profile is solid and reliable, making you a **dependable applicant** for many excellent universities.
 
-            ### **✅ 参考学校层级**
-            你是**优秀大学**（如 Top 50，例如 UIUC(非工院), Wisconsin Madison, UCD, UCI, UCSB, BU）的可靠申请者，并有机会通过突出的文书和活动**冲刺更高排位**。
+            ### **✅ Reference School Tier**
+            You are a reliable candidate for **Excellent Universities** (Top 50, e.g., UIUC (non-Eng), Wisconsin Madison, UCD, UCI, UCSB, BU), with chances to **reach higher** through outstanding essays and activities.
 
-            ### **🛠️ 下一步建议**
-            **突出核心优势，形成差异化。** 重点分析你的分数构成，如果某一维度（如课外活动、特定竞赛）特别突出，应在文书中**重点强调**，以弥补分数上的不足。
+            ### **🛠️ Next Steps**
+            **Highlight Core Strengths.** Analyze your score composition. If one dimension (e.g., ECs or a specific contest) is particularly strong, **emphasize it** in your essays to compensate for other areas.
             """)
 
         else:
-            st.subheader(f"⚠️ 你的分数段: {score_percent:.1f}% (C+ 及以下)")
+            st.subheader(f"⚠️ Your Range: {score_percent:.1f}% (C+ or below)")
             st.markdown("""
-            ### **🚨 竞争力分析**
-            **基础良好，但需强化。** 你的档案在冲击顶尖名校时会面临较大挑战，但仍有机会被众多优秀大学录取。
+            ### **🚨 Competitiveness Analysis**
+            **Good Foundation, Needs Strengthening.** You may face significant challenges targeting elite schools, but you still have opportunities at many excellent universities.
 
-            ### **📝 参考学校层级**
-            对于 Top 50 院校的申请可能需要更加审慎，但在众多**优秀大学**（例如 OSU, Penn State, Rutgers 等）中，你仍有机会获得录取。
+            ### **📝 Reference School Tier**
+            Be cautious with Top 50 applications. However, you have good chances at many **Strong Universities** (e.g., OSU, Penn State, Rutgers).
 
-            ### **🛠️ 下一步建议**
-            **深入分析，立即提升。** 深入分析你的分数构成，**找到最薄弱的环节**。思考是否有机会在截止日期前通过参加竞赛、重考标化、或深化活动等方式进行**实质性提升**。
+            ### **🛠️ Next Steps**
+            **Analyze and Improve Immediately.** Identify your **weakest links**. Consider if you can achieve **substantive improvement** before deadlines via competitions, retaking tests, or deepening activities.
             """)
 
     except Exception as e:
-        st.error(f"在计算过程中发生了一个意料之外的错误: {e}")
-st.set_page_config(layout="wide")
+        st.error(f"An unexpected error occurred during calculation: {e}")
 
-st.title("我的访客地图")
-
+# --- Footer Map ---
+st.title("Visitor Map")
 
 map_html = """
 <!DOCTYPE html>
@@ -686,8 +679,6 @@ map_html = """
 </html>
 """
 
-# Adjust the height to better fit the new width
 components.html(map_html, height=500)
 
-# Your markdown for spacing is perfectly fine
 st.markdown("<br>" * 5, unsafe_allow_html=True)
