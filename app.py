@@ -77,7 +77,7 @@ def load_models():
         with open("sas_fused_weights.json", "r") as f:
             fused_weights_dict = json.load(f)
         
-        eqi_model = xgb.XGBRegressor()
+        eqi_model = xgb.Booster()
         eqi_model.load_model("xgb_eqi_regressor_tuned.json")
         
         embed_model = SentenceTransformer("all-MiniLM-L6-v2")
